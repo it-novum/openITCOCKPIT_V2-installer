@@ -11,7 +11,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
 # See the GNU General Public License for more details.
 #
-# openITCOCKPIT-Installer
+# openITCOCKPIT-Installer v0.3.5
 # This program will install openITCOCKPIT
 # Written by Bjoern Richter 2011
 #
@@ -28,11 +28,21 @@
 #     - Ubuntu14.04 LTS support (v0.3.6)
 #    2015-04-15 (Christian.Michel@it-novum.com)
 #     - Ubuntu14.04.2 LTS support (v0.3.7)
-
+#    2015-08-12 (mkoch@redhat.com, awentlan@cisco.com) (v0.3.8)
+#    - make it install on RHEL 6 (6.7)
+#
 # toDo:
 #	even more error-interception
 #	RedHat Support
 
+#########################
+#
+# Global Variables/Programs
+#
+#########################
+MYSQLINIT=/etc/init.d/mysql
+HTTPDINIT=/etc/init.d/apache2
+PHP=/usr/bin/php5
 
 #########################
 #
@@ -101,7 +111,12 @@ systemdetection (){
 			apt-get --help 2>&1>/dev/null
 			if [ $? == 0 ]; then
 				apt-get -y install lsb
-			fi
+                        else
+                                yum --help 2>&1>/dev/null
+                                if [ $? == 0 ]; then
+                                                 yum -y install redhat-lsb
+                                fi
+                        fi
 		fi
 	fi
 	systype=`lsb_release -d 2>/dev/null|cut -f2`
@@ -323,7 +338,7 @@ licence () {
 itctargzq () {
 	dialog --backtitle "openITCOCKPIT Installation" \
                --title "Online Installation" \
-	       --msgbox "\nIn the next step you can choose between\n\nonline installation (default)\n(get the basic oITC package from Nezztek)\n\noffline installation\n(you need an oITC package on this System)." 13 45 
+	       --msgbox "\nIn the next step you can choose between\n\nonline installation (default)\n(get the basic oITC package from openitcockpit.org)\n\noffline installation\n(you need an oITC package on this System)." 13 45 
 	dialog --yes-label online \
 	       --no-label offline \
 	       --backtitle "openITCOCKPIT Installation" \
@@ -744,9 +759,9 @@ done
 licence
 
 # DB Connection
-/etc/init.d/mysql status 2>&1>/dev/null
+${MYSQLINIT} status 2>&1>/dev/null
 if [ $? == 3 ]; then
-	/etc/init.d/mysql start
+	${MYSQLINIT} start
 fi
 RES=1
 while [ $RES != 0 ]; do
@@ -795,7 +810,7 @@ compile_ndo
 compile_nagios_plugins
 compile_pnp
 
-if [ $systype != "debian6" ];then
+if [ $systype != "debian6" -a $systype != "rhel6" ];then
 	echo -e "\n\n####################\n#\n# Compiling-RRD-Tools \n#\n####################\n\n"
 	compile_rrdtool
 fi
@@ -806,17 +821,25 @@ cd $basicpath/
 find /opt/openitc/nagios/etc -type f -exec sed -i "s/www/$www_group/" \{\} \;
 
 # sudoers $www_group
-echo -e "Cmnd_Alias NAG = /bin/bash *, /etc/init.d/nagios, /opt/openitc/nagios/bin/nagios, /bin/kill, /usr/bin/killall, /opt/openitc/nagios/bin/webrestart.sh, /usr/bin/nmap, /opt/openitc/nagios/3rd/check_mk/bin/check_mk, /usr/bin/itc-rights-perfdata\n$www_user ALL = (root) NOPASSWD: NAG" >> /etc/sudoers
+echo -e "Cmnd_Alias NAG = /bin/bash *, /etc/init.d/nagios, /opt/openitc/nagios/bin/nagios, /bin/kill, /usr/bin/killall, /opt/openitc/nagios/bin/webrestart.sh, /usr/bin/nmap, /opt/openitc/nagios/3rd/check_mk/bin/check_mk\n$www_user ALL = (root) NOPASSWD: NAG" >> /etc/sudoers
 
 #itc-rights
 itc-rights
 
 #prozess start
-/etc/init.d/apache2 restart
+${HTTPDINIT} restart
 /etc/init.d/ndo start
 /etc/init.d/rrdcached start
 /etc/init.d/npcd start
 
+# make reboot consistent
+if [ "$systype" == "rhel6" ]; then
+	chkconfig mysqld on
+	chkconfig httpd on
+	chkconfig ndo on
+	chkconfig rrdcached on
+	chkconfig npcd on
+fi	
 #itc-user-htpasswd
 $htpasswd_bin -D /opt/openitc/.htpasswd itnc
 $htpasswd_bin -b /opt/openitc/.htpasswd $itcuser $itcpass
@@ -824,7 +847,7 @@ pass_hash=`$htpasswd_bin -nb ${itcuser} ${itcpass}|cut -d ':' -f2`
 echo "${itcuser}:${pass_hash}:initial Administrator:root@localhost:user,admin" >> /opt/openitc/nagios/share/3rd/wiki/conf/users.auth.php
 
 #itc-user-NagVis-DB
-php5 ${basicpath}/includes/exec/create_nagvis_user.php $itcuser
+${PHP} ${basicpath}/includes/exec/create_nagvis_user.php $itcuser
 
 # reset terminal color
 echo -e "\033[0m"

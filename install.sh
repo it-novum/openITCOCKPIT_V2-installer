@@ -667,7 +667,7 @@ end_install () {
 #########################
 
 basicpath=`pwd`
-version="0.3.7"
+version="0.3.8"
 oitcdbpwd="open2itc"
 declare -a to_sysname
 declare -a from_sysname

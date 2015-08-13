@@ -1,0 +1,13 @@
+#!/bin/bash
+HTTP_USER=www-data
+HTTP_GROUP=www-data
+
+###########
+#
+#  Eigner
+#
+###########
+
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/share/perfdata/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/share/perfdata/* -R
+

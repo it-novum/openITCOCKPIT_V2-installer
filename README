@@ -1,0 +1,42 @@
+####################################
+#
+#   What is the openITCOCKPIT installer:
+#
+####################################
+
+This shell script installs openITCOCKPIT. For this purpose it downloads or uses a previously downladed installation package from Nezztek to make all the necessary 3rd party Tools and the openITCOCKPIT-Frontend available to the installer.
+
+####################################
+#
+#   License:
+#
+####################################
+
+This script is released under the GPLv2
+Details about this license can be found at http://www.gnu.org/licenses/gpl-2.0.html
+
+####################################
+#
+#   System requirements:
+#
+####################################
+
+The installer should work with the following Linux derivatives
+
+- Debian 6.x
+- Ubuntu 10.04
+- Ubuntu 11.10
+- Ubuntu 14.04
+- SLES 11
+- openSUSE 11.2
+- openSUSE 12
+
+####################################
+#
+#   Installation:
+#
+####################################
+
+Just provide the execution right to the install.sh file and run the install.sh.
+After the start of the installer just follow the instructions
+

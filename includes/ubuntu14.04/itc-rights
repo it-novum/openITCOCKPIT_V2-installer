@@ -1,0 +1,121 @@
+#!/bin/bash
+#Autor:		Richter, Bjoern
+#		it-novum GmbH	
+#Date:		2009-01-01
+#Country, City	Germany / Fulda
+#---------------------------------------------------------------------
+# updated:	Michel, Christian / 2011-01-18
+#		- Ueberpruefung, ob NPCD laeuft und ggf.
+#		  vor Anpassung der Rechte beenden und danach
+#		  neu starten.
+#
+#		- Rechteanpassung des Backup-Pfades auskommentiert,
+#		  da sich dieser geaendert hat
+#
+# WICHTIG: 	Bei ITC-Versionen vor 2.7.0 muessen Zeile 81 + 82
+#		wieder einkommentiert werden.
+#
+#---------------------------------------------------------------------
+HTTP_USER=www-data
+HTTP_GROUP=www-data
+
+#############
+#
+#  NPCD (1)
+#
+#############
+
+DAEMON=npcd
+RUNNING=`ps -eaf | grep $DAEMON | grep nagios | wc -l`
+
+printf "Check if $DAEMON is running..."
+
+if [ $RUNNING -ge 1 ]; then
+   printf "$DAEMON is running!\n"
+   /etc/init.d/npcd stop
+fi
+
+###########
+#
+#  Rechte
+#
+###########
+
+printf "Setting rights..."
+
+chmod 775 /etc/init.d/nagios* /etc/init.d/ndo /etc/init.d/snmptrapd /etc/init.d/npcd
+chmod o+r /dev/random /dev/urandom
+chmod 644 /var/spool/cron/crontabs/*
+chmod 664 /opt/openitc/* -R
+chmod -R 775 /opt/openitc/nagios/libexec
+chmod 775 /opt/openitc/
+find /opt/openitc -type d -print0 |/usr/bin/xargs -0 /bin/chmod 775
+chmod 775 /opt/openitc/nagios/bin/* -R
+chmod 775 /opt/openitc/nagios/sbin/* -R
+chmod g+w /opt/openitc/nagios/3rd/* -R
+chmod 775 /opt/openitc/nagios/3rd/check_mk/bin/*
+chmod 775 /opt/openitc/nagios/3rd/check_mk/agents/*
+chmod 660 /opt/openitc/.htpasswd
+chmod 775 /usr/bin/itc-*
+
+###########
+#
+#  Eigner
+#
+###########
+
+
+chown root:root /etc/init.d/nagios* /etc/init.d/ndo /etc/init.d/snmptrapd /etc/init.d/npcd
+chown nagios:nagios /home/nagios
+chown itcockpit:users /home/itcockpit
+chown nagios:root /var/spool/cron/crontabs/nagios
+chown $HTTP_USER:root /var/spool/cron/crontabs/www-data
+chown nagios:$HTTP_GROUP /opt/openitc/
+chown nagios:$HTTP_GROUP /opt/openitc/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/.htpasswd
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/3rd/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/3rd/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/archives/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/archives/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/etc/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/etc/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/sbin/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/sbin/* -R
+# Backup-Ordner ab ITC 2.7.0 in /opt/openitc/nagios/share/main/backup
+# Oberflaeche besitzt daher ausreichend Rechte fuer DB-Dumps bei Export
+#chown $HTTP_USER:$HTTP_GROUP /opt/openitc/nagios/backup/
+#chown $HTTP_USER:$HTTP_GROUP /opt/openitc/nagios/backup/* -R
+chown $HTTP_USER:$HTTP_GROUP /opt/openitc/nagios/share/
+chown $HTTP_USER:$HTTP_GROUP /opt/openitc/nagios/share/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/var/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/var/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/share/pnp/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/share/pnp/* -R
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/share/perfdata/
+chown nagios:$HTTP_GROUP /opt/openitc/nagios/share/perfdata/* -R
+
+
+###########
+#
+#  sonder Dateien
+#
+###########
+
+chown root:$HTTP_GROUP /opt/openitc/nagios/libexec/check_icmp
+chmod u+s /opt/openitc/nagios/libexec/check_icmp
+chown root:$HTTP_GROUP /opt/openitc/nagios/libexec/check_dhcp
+chmod u+s /opt/openitc/nagios/libexec/check_dhcp
+
+echo "...finished setting rights!"
+
+#############
+#
+#  NPCD (2)
+#
+#############
+
+if [ $RUNNING -ge 1 ]; then
+   #echo "Starting $DAEMON ..."
+   /etc/init.d/npcd start
+fi
+
